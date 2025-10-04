@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP Test Email
 Description: WP Test Email allows you to test if your WordPress installation is sending mail or not and logs all outgoing emails.
-Version: 1.1.9
+Version: 1.1.7
 Author: Boopathi Rajan
 Text Domain: wp-test-email
 Author URI: https://www.boopathirajan.com
@@ -21,25 +21,29 @@ function wp_test_email() {
     <h1><?php _e('Test Mail', 'wp-test-email'); ?></h1>
     <form method="post">
         <?php
-        if (isset($_POST['mail_to']) && isset($_POST['wp_test_email_nonce_field']) && wp_verify_nonce($_POST['wp_test_email_nonce_field'], 'wp_test_email_nonce_action')) {
-			$to = sanitize_email($_POST['mail_to']);
-			$subject = sanitize_text_field($_POST['mail_subject']);
-			$body = "This is the test mail from " . get_bloginfo('name');
-			$headers = array('Content-Type: text/html; charset=UTF-8');
-			$test_email = wp_mail($to, $subject, $body);
-			if ($test_email) {
-				?>
-				<div class="notice notice-success is-dismissible">
-					<p><?php _e('Email has been sent!', 'wp-test-email'); ?></p>
-				</div>
-				<?php
-			} else {
-				?>
-				<div class="notice notice-error is-dismissible">
-					<p><?php _e('Email not sent!', 'wp-test-email'); ?></p>
-				</div>
-				<?php
-			}				
+        if (isset($_POST['mail_to'])) {
+            if (wp_verify_nonce($_POST['wp_test_email_nonce_field'], 'wp_test_email_nonce_action')) {
+                if (!empty($_POST['mail_to'])) {
+                    $to = sanitize_email($_POST['mail_to']);
+                    $subject = sanitize_text_field($_POST['mail_subject']);
+                    $body = "This is the test mail from " . get_bloginfo('name');
+                    $headers = array('Content-Type: text/html; charset=UTF-8');
+                    $test_email = wp_mail($to, $subject, $body);
+                    if ($test_email) {
+                        ?>
+                        <div class="notice notice-success is-dismissible">
+                            <p><?php _e('Email has been sent!', 'wp-test-email'); ?></p>
+                        </div>
+                        <?php
+                    } else {
+                        ?>
+                        <div class="notice notice-error is-dismissible">
+                            <p><?php _e('Email not sent!', 'wp-test-email'); ?></p>
+                        </div>
+                        <?php
+                    }
+                }
+            }
         }
         ?>
         <table class="form-table">
@@ -73,8 +77,8 @@ function log_outgoing_emails($phpmailer) {
     $table_name = $wpdb->prefix . 'test_email_logs';
 
     $to = implode(', ', array_column($phpmailer->getToAddresses(), 0));
-    $subject = sanitize_text_field($phpmailer->Subject);
-    $body = sanitize_textarea_field($phpmailer->Body);
+    $subject = $phpmailer->Subject;
+    $body = $phpmailer->Body;
     $status = 'Sent'; // Assuming it's sent unless there's an error
 
     $wpdb->insert(
@@ -98,7 +102,7 @@ function wp_test_email_create_table() {
 
     $sql = "CREATE TABLE $table_name (
         id mediumint(9) NOT NULL AUTO_INCREMENT,
-        time datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
         to_email varchar(100) NOT NULL,
         subject varchar(255) NOT NULL,
         body text NOT NULL,
@@ -182,11 +186,11 @@ function wp_test_email_logs() {
         <table class="widefat fixed" cellspacing="0">
             <thead>
                 <tr>
-                    <th><a href="<?php echo esc_url(add_query_arg(['orderby' => 'time', 'order' => ($sort_by == 'time' && $order == 'ASC') ? 'DESC' : 'ASC'])); ?>"><?php _e('Time', 'wp-test-email'); ?></a></th>
-                    <th><a href="<?php echo esc_url(add_query_arg(['orderby' => 'to_email', 'order' => ($sort_by == 'to_email' && $order == 'ASC') ? 'DESC' : 'ASC'])); ?>"><?php _e('To', 'wp-test-email'); ?></a></th>
-                    <th><a href="<?php echo esc_url(add_query_arg(['orderby' => 'subject', 'order' => ($sort_by == 'subject' && $order == 'ASC') ? 'DESC' : 'ASC'])); ?>"><?php _e('Subject', 'wp-test-email'); ?></a></th>
+                    <th><a href="<?php echo add_query_arg(['orderby' => 'time', 'order' => ($sort_by == 'time' && $order == 'ASC') ? 'DESC' : 'ASC']); ?>"><?php _e('Time', 'wp-test-email'); ?></a></th>
+                    <th><a href="<?php echo add_query_arg(['orderby' => 'to_email', 'order' => ($sort_by == 'to_email' && $order == 'ASC') ? 'DESC' : 'ASC']); ?>"><?php _e('To', 'wp-test-email'); ?></a></th>
+                    <th><a href="<?php echo add_query_arg(['orderby' => 'subject', 'order' => ($sort_by == 'subject' && $order == 'ASC') ? 'DESC' : 'ASC']); ?>"><?php _e('Subject', 'wp-test-email'); ?></a></th>
                     <th><?php _e('Body', 'wp-test-email'); ?></th>
-                    <th><a href="<?php echo esc_url(add_query_arg(['orderby' => 'status', 'order' => ($sort_by == 'status' && $order == 'ASC') ? 'DESC' : 'ASC'])); ?>"><?php _e('Status', 'wp-test-email'); ?></a></th>
+                    <th><a href="<?php echo add_query_arg(['orderby' => 'status', 'order' => ($sort_by == 'status' && $order == 'ASC') ? 'DESC' : 'ASC']); ?>"><?php _e('Status', 'wp-test-email'); ?></a></th>
                 </tr>
             </thead>
             <tbody>
